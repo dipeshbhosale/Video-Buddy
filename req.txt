@@ -5,3 +5,4 @@ scikit-learn
 requests
 yt-dlp
 streamlit-extras
+urllib3
