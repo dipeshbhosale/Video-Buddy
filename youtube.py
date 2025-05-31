@@ -6,7 +6,7 @@ import requests
 import logging # Added for robust logging
 import time # Added for implementing delays
 from urllib.parse import urlparse
-from faster_whisper import WhisperModel # Import faster-whisper
+#from faster_whisper import WhisperModel # Import faster-whisper
 from streamlit_extras.add_vertical_space import add_vertical_space
 from sentence_transformers import SentenceTransformer # For RAG-style embedding
 from sklearn.metrics.pairwise import cosine_similarity # For RAG retrieval
