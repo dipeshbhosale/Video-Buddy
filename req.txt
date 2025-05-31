@@ -1,0 +1,7 @@
+streamlit
+faster-whisper
+sentence-transformers
+scikit-learn
+requests
+yt-dlp
+streamlit-extras
