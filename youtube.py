@@ -106,11 +106,16 @@ class TempAudioFile:
         if self.path and os.path.exists(self.path):
             try:
                 os.remove(self.path)
+                logging.info(f"Successfully cleaned up temporary audio file: {self.path}")
             except Exception as e:
                 logging.warning(f"Could not clean up temporary audio file: {self.path}. Error: {e}")
                 # Keep user-facing warning if appropriate, or handle silently if preferred
                 # For now, let's keep it to inform the user of potential leftover files.
                 st.warning(f"Note: Could not automatically clean up a temporary audio file: {os.path.basename(self.path)}. You may need to delete it manually if it persists. Error: {e}")
+        elif self.path: # Path was provided but file doesn't exist (e.g., yt-dlp failed to create it or already cleaned)
+            logging.info(f"Temporary audio file {self.path} did not exist at cleanup time (or was already removed).")
+        # If self.path is None or empty, nothing to do.
+
 
 
 def download_youtube_audio(url):
@@ -753,6 +758,7 @@ if st.button("✨ Make My Notes!"):
 
         # Advance the global key index for the *next* fresh "Make My Notes!" session.
         # This ensures that even if this session sticks to one key, the next overall app use tries a different starting key.
+        st.session_state.last_used_session_api_key = session_api_key # Store for potential Q&A use
         CURRENT_API_KEY_INDEX = (CURRENT_API_KEY_INDEX + 1) % len(AVAILABLE_GROQ_API_KEYS) # Advance for next time
 
         update_progress_with_timer(10, "⬇️ Downloading audio from YouTube...")
@@ -791,6 +797,7 @@ if st.button("✨ Make My Notes!"):
                             original_failed_key_index = AVAILABLE_GROQ_API_KEYS.index(session_api_key) # Find index of the failed key
                             new_key_for_session = get_new_session_key_on_401(original_failed_key_index)
                             if new_key_for_session:
+                                st.session_state.last_used_session_api_key = new_key_for_session # Update stored key
                                 session_api_key = new_key_for_session # Switch key for the rest of the session
                                 chunk_summary = summarize_transcript_chunk_with_groq(session_api_key, chunk, i + 1, num_chunks) # Retry the first chunk with new key
                             # If new_key_for_session is None, all keys failed, error will propagate
@@ -848,9 +855,9 @@ if st.session_state.rag_chunks: # Only show Q&A if RAG data is ready
             if relevant_chunks:
                 # For Q&A, we should also use the session_api_key if available from a successful run
                 # However, session_api_key is local to the button click.
-                # A more robust way would be to store the last successful key in st.session_state
-                if 'session_api_key' in st.session_state and st.session_state.session_api_key:
-                    qna_api_key = st.session_state.session_api_key
+                # Use the last successfully determined API key from the main process
+                if 'last_used_session_api_key' in st.session_state and st.session_state.last_used_session_api_key:
+                    qna_api_key = st.session_state.last_used_session_api_key
                 else: # Fallback if no session key was stored (e.g. main process failed before setting it)
                     qna_api_key = get_initial_groq_api_key() 
                 
